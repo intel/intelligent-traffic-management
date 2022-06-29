@@ -1,0 +1,114 @@
+# Copyright 2022 Intel Corporation
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+{{- $global := . -}}
+{{- range $instance_idx := until (int .Values.num_video_instances) -}}
+{{- $instance := "1" }}
+{{- if eq (int $global.Values.num_video_instances) 1 }}
+{{- $instance = "1" }}
+{{- end }}
+{{- if gt (int $global.Values.num_video_instances) 1 }}
+{{- $instance = add 1 $instance_idx }}
+{{- end }}
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: {{ $global.Values.itm_video_inference.name }}
+  name: {{ $global.Values.itm_video_inference.name }}{{ $instance }}
+  namespace: {{ $global.Values.namespace }}
+
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{ $global.Values.itm_video_inference.name }}{{ $instance }}
+  template:
+    metadata:
+      labels:
+        app: {{ $global.Values.itm_video_inference.name }}{{ $instance }}
+        role: itm
+    spec:
+      containers:
+      - name: {{ $global.Values.itm_video_inference.name }}{{ $instance }}
+        image: {{ $global.Values.images.registry }}{{ $global.Values.images.itm_video_inference }}:{{ $global.Values.images.tag }}
+        imagePullPolicy: {{ $global.Values.imagePullPolicy }}
+        securityContext:
+          privileged: true
+          readOnlyRootFilesystem: true
+        volumeMounts:
+        - name: dev
+          mountPath: /dev
+        - name: tmp
+          mountPath: /tmp
+        - name: var-tmp
+          mountPath: /var/tmp
+        - name: run-udev
+          mountPath: /run/udev
+        - name: dev-shm
+          mountPath: /dev/shm
+        - name: cm-cfg
+          mountPath: /home/pipeline-server/models/object_detection/person-vehicle-bike-detection-2000/person-vehicle-bike-detection-2000.json
+          subPath: person-vehicle-bike-detection-2000.json
+          readOnly: true
+        - name: cm-cfg
+          mountPath: /home/pipeline-server/pipelines/object_detection/person-vehicle-bike-detection-2000/pipeline.json
+          subPath: pipeline.json
+          readOnly: true
+        - name: cm-cfg
+          mountPath: /app/config.json
+          subPath: config.json
+          readOnly: true
+
+        env:
+        - name: PUBLISHER_TOPIC
+          value: {{ $global.Values.itm_video_inference.topic.publisher }}{{ $instance }}
+        - name: MQTT_PORT
+          value: "{{ $global.Values.mqtt.port }}"
+        - name: MQTT_BROKER
+          value: {{ $global.Values.mqtt.broker }}
+        - name: XDG_RUNTIME_DIR
+          value: "/tmp"
+        - name: PY_LOG_LEVEL
+          value: "{{ $global.Values.py_log_level }}"
+        - name: SOURCE_TYPE
+          value: uri
+        {{- with (index $global.Values.itm_video_inference.test_videos (mod $instance 2)) }}
+        - name: SOURCE_URI
+          value: {{ .uri }}
+        {{- end }}
+
+      volumes:
+      - name: dev
+        hostPath:
+          path: /dev
+      - name: tmp
+        hostPath:
+          path: /tmp
+      - name: var-tmp
+        hostPath:
+          path: /var/tmp
+      - name: run-udev
+        hostPath:
+          path: /run/udev
+      - name: dev-shm
+        hostPath:
+          path: /dev/shm
+      - name: cm-cfg
+        configMap:
+          name: itm-vi-config
+
+---
+{{- end }}

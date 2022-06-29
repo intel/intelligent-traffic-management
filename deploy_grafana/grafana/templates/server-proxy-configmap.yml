@@ -1,0 +1,38 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2021 Intel Corporation
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: "grafana-configmap"
+  labels:
+    name: "grafana-configmap"
+  namespace: default
+data:
+
+  nginx.conf: |-
+    worker_processes  1;
+    pid /tmp/nginx.pid;
+
+    events {
+        worker_connections  1024;
+    }
+
+    http {
+        default_type  application/octet-stream;
+        sendfile      on;
+        keepalive_timeout  65;
+        server_tokens off;
+        server {
+            listen                 3200 ssl;
+            server_name            grafana;
+            ssl_certificate        /etc/nginx/pvc/certs/tls_cert.pem;
+            ssl_certificate_key    /etc/nginx/pvc/certs/tls_key.pem;
+            ssl_verify_client      off;
+            ssl_protocols          TLSv1.2 TLSv1.3;
+            ssl_ciphers            "TLS_AES_256_GCM_SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-AES256-GCM-SHA384";
+            location / {
+                proxy_pass http://127.0.0.1:3000/;
+                }
+            }
+    }

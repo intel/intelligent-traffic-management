@@ -1,0 +1,17 @@
+{
+  "name":"ITM",
+  "type":"influxdb",
+  "url":"http://localhost:8086",
+  "access":"proxy",
+  "basicAuth": false,
+  "isDefault": true,
+  "readOnly": false,
+  "database":"itm_metadata",
+  "jsonData": {
+            "httpMode": "GET",
+            "tlsAuth": false,
+            "tlsSkipVerify": true
+  },
+  "password": "admin",
+  "user": "admin"
+}

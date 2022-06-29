@@ -1,0 +1,334 @@
+<!-- 
+Copyright 2021 Intel Corporation
+
+This software and the related documents are Intel copyrighted materials,
+and your use of them is governed by the express license under which they
+were provided to you ("License"). Unless the License provides otherwise,
+you may not use, modify, copy, publish, distribute, disclose or transmit
+this software or the related documents without Intel's prior written permission.
+
+This software and the related documents are provided as is, with no express or
+implied warranties, other than those that are expressly stated in the License
+-->
+<!DOCTYPE HTML>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>MapUI</title>
+    <script src="{{ map_js }}" integrity="{{ map_cdn_integrity }}" crossorigin="anonymous"></script>
+    <link rel="icon" href="{{ url_for('static', filename='images/favicon-32x32.png') }}" sizes="16x16">
+    <link rel="stylesheet" href="{{ map_css  }}">
+<style>
+      #map {
+        width: 100%;
+        height: 850px;
+      }
+      .ol-popup {
+        font-weight: 400;
+        font-size: 18px;
+        position: absolute;
+        background-color: white;
+        box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+        padding: 5px;
+        border-radius: 5px;
+        border: 1px solid #cccccc;
+        bottom: 12px;
+        left: -50px;
+        min-width: 280px;
+      }
+      .ol-popup:after, .ol-popup:before {
+        top: 100%;
+        border: solid transparent;
+        content: " ";
+        height: 0;
+        width: 0;
+        position: absolute;
+        pointer-events: none;
+      }
+      .ol-popup:after {
+        border-top-color: white;
+        border-width: 10px;
+        left: 48px;
+        margin-left: -10px;
+      }
+      .ol-popup:before {
+        border-top-color: #cccccc;
+        border-width: 11px;
+        left: 48px;
+        margin-left: -11px;
+      }
+      .ol-popup-closer {
+        text-decoration: none;
+        left: 2px;
+        float: left;
+      }
+      #popup-redirect {
+        right: 8px;
+        float: right;;
+      }
+      #popup-closer:after {
+        content: "✖";
+		color:gray;
+        left: 8px;
+      }
+	  #popup-closer:hover {
+        background-color:red;
+		color:white;
+      }
+      #address{
+        position:relative;
+        left: 5px;
+        font-size: 16px;
+      }
+      #all_stream{
+        position:absolute;
+        z-index:5;
+        width:0px;
+        height:0px;
+      }
+      #show_all_button{
+        position:fixed;
+        z-index:10;
+        right:0px;
+      }
+      .inner_popup{
+        max-height: 210px;
+        width: 325px;
+        float: left;
+      }
+      #img_div{
+        position: absolute;
+        z-index: 5;
+        background: black;
+        display: table-cell;
+        vertical-align: middle;
+      }
+</style>
+</head>
+<body>
+<div id="img_div">
+</div>
+<button onclick="show_all_streams()" id="show_all_button">View All Streams</button>
+<div id="map"></div>
+<div id="popup" class="ol-popup">
+</div>
+<script>
+var map;
+var num_ch;
+var show = true;
+var origin = window.location.origin ;
+var config = {{ config|safe }};
+
+function show_all_streams() {
+    var frame = document.getElementById("img_div");
+
+    var button = document.getElementById("show_all_button");
+
+    if (show == false){
+        frame.style.width = "0px";
+        frame.style.height = "0px";
+        frame.style.display = "none";
+        frame.innerHTML = "";
+        show = true;
+        button.innerHTML = "View All Stream"
+    }
+    else{
+
+        show = false
+        frame.style.display = "table-cell";
+        frame.style.width = "100%";
+        frame.style.height = "100vh";
+
+        for(index in config['servers']) {
+          console.log(config['servers'][index]);
+          var fimg = document.createElement("img");
+          fimg.style.width = "100%";
+          fimg.src = "https://"+config['servers'][index]+"/get_all_streams";
+          frame.appendChild(fimg);
+        }
+
+        button.innerHTML = "Close";
+    }
+};
+
+
+function create_popup(base_popup, ports, addresses, overlay, url_data, servers){
+    var src = origin + "/camera/";
+    for (var i in ports){
+        top_div = document.createElement("DIV");
+        links = document.createElement("DIV");
+
+        close = document.createElement("A");
+        close.classList.add("ol-popup-closer");
+        close.setAttribute("href", "#");
+        close.onclick = function () {
+           overlay.setPosition(undefined);
+           close.blur();
+           return false;
+        };
+        close.setAttribute("id", "popup-closer");
+        redirect = document.createElement("A");
+        redirect.classList.add("ol-popup-closer");
+        redirect.setAttribute("id", "popup-redirect");
+        redirect.setAttribute("target", "_blank");
+        redirect.setAttribute("href", url_data[ports[i]]);
+        redirect.innerHTML = "&#8599;";
+
+        links.appendChild(close);
+        links.appendChild(redirect);
+
+        address_span = document.createElement("SPAN");
+        address_span.setAttribute("id", "address");
+        address_span.innerHTML = addresses[i];
+
+        dashboard_link = document.createElement("A");
+        dashboard_link.setAttribute("target", "_blank");
+        dashboard_link.setAttribute("href", url_data[ports[i]]);
+        dashboard_link.onclick = function () {
+            destroy_popup(base_popup);
+            overlay.setPosition(undefined);
+        };
+
+        img_element = document.createElement("IMG");
+        var d = new Date();
+        img_element.src = "https://" + servers[i] + "/camera/" + ports[i].toString() + "?" + d.getTime();
+        img_element.style.width = "320px";
+        dashboard_link.appendChild(img_element);
+
+        top_div.appendChild(links);
+        top_div.appendChild(address_span);
+        top_div.appendChild(dashboard_link);
+        top_div.classList.add("inner_popup");
+        base_popup.appendChild(top_div)
+    }
+    height_factor = Math.floor(Math.sqrt(ports.length+1));
+    base_popup.style.maxHeight = (height_factor*210).toString() + "px";
+    base_popup.style.width = (Math.ceil(ports.length/height_factor)*325).toString() + "px";
+}
+
+function destroy_popup(base_popup){
+    while (base_popup.firstChild) {
+        base_popup.firstChild.remove();
+    }
+    base_popup.style.maxHeight = 0;
+    base_popup.style.width = 0;
+}
+
+function create_marker(lat, lon) {
+    var iconFeature =  new ol.Feature({
+        geometry: new ol.geom.Point(ol.proj.fromLonLat([lon, lat]))
+    })
+
+    var iconStyle = new ol.style.Style({
+       image: new ol.style.Icon({
+            anchor: [0.5, 46],
+            anchorXUnits: 'fraction',
+            anchorYUnits: 'pixels',
+            src: '{{ url_for('static', filename='images/marker-icon.png') }}',
+        }),
+    });
+
+    iconFeature.setStyle(iconStyle);
+
+    var marker_layer = new ol.layer.Vector({
+        source: new ol.source.Vector({
+            features: [iconFeature]
+        })
+     });
+    return marker_layer;
+};
+
+function init() {
+    var container = document.getElementById('popup');
+    var layer = new ol.layer.Tile({
+          source: new ol.source.OSM()
+    });
+
+    camera_details = config["cameras"]
+    url_data = config["urls"]
+    num_ch = config["cameras"].length;
+
+    var min_lat = min_lon = 100000;
+    var max_lat = max_lon = -1;
+    for (var i in camera_details){
+        min_lat = Math.min(min_lat, camera_details[i]['latitude']);
+        min_lon = Math.min(min_lon, camera_details[i]['longitude']);
+        max_lat = Math.max(max_lat, camera_details[i]['latitude']);
+        max_lon = Math.max(max_lon, camera_details[i]['longitude']);
+    };
+    var center_loc = [min_lon+(max_lon - min_lon)/2, min_lat+(max_lat - min_lat)/2];
+    var center = ol.proj.transform(center_loc, 'EPSG:4326', 'EPSG:3857');
+    map = new ol.Map({
+        layers: [layer],
+        //overlays: [overlay],
+        target: 'map',
+        view: new ol.View({
+            center: center,
+            zoom: 16,
+        }),
+    });
+
+    for (var i in camera_details){
+        marker_layer = create_marker(camera_details[i]['latitude'], camera_details[i]['longitude']);
+        map.addLayer(marker_layer);
+    };
+
+    var overlay = new ol.Overlay({
+        element: container,
+        autoPan: true,
+        autoPanAnimation: {
+            duration: 250,
+        },
+    });
+
+
+    map.on('click', function (evt) {
+        if (map.hasFeatureAtPixel(evt.pixel) === true){
+            var coordinate = evt.coordinate;
+            overlay.setPosition(coordinate);
+            var coords = ol.proj.toLonLat(coordinate);
+            var lat = +coords[1].toFixed(5);
+            var lon = +coords[0].toFixed(5);
+            var min_dist = 1000000;
+            var servers = [];
+            var ports = [];
+            var addresses = [];
+
+            for (var i in camera_details) {
+                var a = camera_details[i]['latitude'] - lat;
+                var b = camera_details[i]['longitude'] - lon;
+                var c = Math.sqrt(a*a + b*b);
+                if ( min_dist > c){
+                    min_dist = c;
+                    ports = [];
+                    servers = [];
+                    addresses = [];
+                    servers.push(camera_details[i]['server_ip']);
+                    ports.push(camera_details[i]['cam_index']);
+                    addresses.push(camera_details[i]['address']);
+                }
+                else if (min_dist === c){
+                    servers.push(camera_details[i]['server_ip']);
+                    ports.push(camera_details[i]['cam_index']);
+                    addresses.push(camera_details[i]['address']);
+                }
+            };
+            map.addOverlay(overlay);
+            destroy_popup(container);
+            create_popup(container, ports, addresses, overlay, url_data, servers);
+            console.log(ports, servers);
+        }
+        else {
+            destroy_popup(container);
+            overlay.setPosition(undefined);
+        }
+
+    });
+}
+
+init()
+
+</script>
+</body>
+</html>
+

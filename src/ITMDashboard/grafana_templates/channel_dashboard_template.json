@@ -1,0 +1,1054 @@
+{
+  "folderId": 0,
+  "overwrite": true,
+  "dashboard": {
+    "editable": true,
+    "gnetId": null,
+    "graphTooltip": 0,
+    "id": null,
+    "timezone": "browser",
+    "title": "ITM Channel 0",
+    "uid": null,
+    "version": 0,
+    "tags": [
+      "channel"
+    ],
+    "links": [
+      {
+        "asDropdown": true,
+        "icon": "external link",
+        "tags": [
+          "ITM"
+        ],
+        "targetBlank": true,
+        "title": "Main dashboard",
+        "type": "dashboards"
+      }
+    ],
+    "panels": [
+      {
+        "cacheTimeout": null,
+        "datasource": "ITM",
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "thresholds"
+            },
+            "mappings": [
+              {
+                "options": {
+                  "match": "null",
+                  "result": {
+                    "text": "0"
+                  }
+                },
+                "type": "special"
+              }
+            ],
+            "max": 1000,
+            "min": 0,
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green",
+                  "value": null
+                },
+                {
+                  "color": "red",
+                  "value": 1
+                }
+              ]
+            },
+            "unit": "none"
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 5,
+          "w": 3,
+          "x": 0,
+          "y": 0
+        },
+        "id": 16,
+        "interval": null,
+        "links": [],
+        "maxDataPoints": 100,
+        "options": {
+          "orientation": "horizontal",
+          "reduceOptions": {
+            "calcs": [
+              "mean"
+            ],
+            "fields": "",
+            "values": false
+          },
+          "showThresholdLabels": false,
+          "showThresholdMarkers": false,
+          "text": {}
+        },
+        "pluginVersion": "8.1.5",
+        "targets": [
+          {
+            "alias": "Collisions Count",
+            "groupBy": [],
+            "measurement": "collisions_data",
+            "orderByTime": "ASC",
+            "policy": "default",
+            "query": "SELECT last(\"channel0collision\") - first(\"channel0collision\") FROM \"collisions_data\" WHERE $timeFilter",
+            "rawQuery": true,
+            "refId": "A",
+            "refresh": "5s",
+            "resultFormat": "time_series",
+            "select": [
+              [
+                {
+                  "params": [
+                    "channel0collision"
+                  ],
+                  "type": "field"
+                },
+                {
+                  "params": [],
+                  "type": "last"
+                }
+              ]
+            ],
+            "tags": []
+          }
+        ],
+        "timeFrom": null,
+        "timeShift": null,
+        "title": "Collisions Detected",
+        "type": "gauge"
+      },
+      {
+        "aliasColors": {},
+        "bars": false,
+        "dashLength": 10,
+        "dashes": false,
+        "datasource": "ITM",
+        "fieldConfig": {
+          "defaults": {
+            "links": []
+          },
+          "overrides": []
+        },
+        "fill": 1,
+        "fillGradient": 0,
+        "gridPos": {
+          "h": 10,
+          "w": 11,
+          "x": 3,
+          "y": 0
+        },
+        "hiddenSeries": false,
+        "id": 12,
+        "legend": {
+          "avg": false,
+          "current": false,
+          "max": false,
+          "min": false,
+          "show": true,
+          "total": false,
+          "values": false
+        },
+        "lines": true,
+        "linewidth": 1,
+        "method": "iframe",
+        "nullPointMode": "null",
+        "options": {
+          "alertThreshold": true
+        },
+        "percentage": false,
+        "pluginVersion": "8.1.5",
+        "pointradius": 2,
+        "points": false,
+        "renderer": "flot",
+        "seriesOverrides": [],
+        "spaceLength": 10,
+        "stack": false,
+        "steppedLine": false,
+        "targets": [
+          {
+            "alias": "Collisions",
+            "groupBy": [],
+            "measurement": "collisions_data",
+            "orderByTime": "ASC",
+            "policy": "default",
+            "refId": "A",
+            "refresh": "5s",
+            "resultFormat": "time_series",
+            "select": [
+              [
+                {
+                  "params": [
+                    "channel0collision"
+                  ],
+                  "type": "field"
+                }
+              ]
+            ],
+            "tags": []
+          },
+          {
+            "alias": "Near Miss",
+            "groupBy": [],
+            "measurement": "collisions_data",
+            "orderByTime": "ASC",
+            "policy": "default",
+            "refId": "B",
+            "refresh": "5s",
+            "resultFormat": "time_series",
+            "select": [
+              [
+                {
+                  "params": [
+                    "channel0near miss"
+                  ],
+                  "type": "field"
+                }
+              ]
+            ],
+            "tags": []
+          }
+        ],
+        "thresholds": [],
+        "timeFrom": null,
+        "timeRegions": [],
+        "timeShift": null,
+        "title": "Collision and Near Miss",
+        "tooltip": {
+          "shared": true,
+          "sort": 0,
+          "value_type": "individual"
+        },
+        "type": "graph",
+        "url": "http://127.0.0.1:30300/camera/7",
+        "xaxis": {
+          "buckets": null,
+          "mode": "time",
+          "name": null,
+          "show": true,
+          "values": []
+        },
+        "yaxes": [
+          {
+            "format": "short",
+            "label": null,
+            "logBase": 1,
+            "max": null,
+            "min": null,
+            "show": true
+          },
+          {
+            "format": "short",
+            "label": null,
+            "logBase": 1,
+            "max": null,
+            "min": null,
+            "show": true
+          }
+        ],
+        "yaxis": {
+          "align": false,
+          "alignLevel": null
+        }
+      },
+      {
+        "datasource": null,
+        "gridPos": {
+          "h": 10,
+          "w": 10,
+          "x": 14,
+          "y": 0
+        },
+        "header_js": "{}",
+        "id": 18,
+        "method": "iframe",
+        "mode": "html",
+        "params_js": "",
+        "pluginVersion": "8.1.5",
+        "request": "http",
+        "responseType": "arraybuffer",
+        "showErrors": true,
+        "showTime": false,
+        "showTimeFormat": "LTS",
+        "showTimePrefix": null,
+        "showTimeValue": "request",
+        "skipSameURL": false,
+        "targets": [
+          {
+            "queryType": "randomWalk",
+            "refId": "A"
+          }
+        ],
+        "templateResponse": true,
+        "timeFrom": null,
+        "timeShift": null,
+        "title": "Inferred Stream",
+        "type": "ryantxu-ajax-panel",
+        "url": "http://127.0.0.1:30300/camera/7",
+        "withCredentials": false
+      },
+      {
+        "cacheTimeout": null,
+        "datasource": "ITM",
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "thresholds"
+            },
+            "mappings": [
+              {
+                "options": {
+                  "match": "null",
+                  "result": {
+                    "text": "0"
+                  }
+                },
+                "type": "special"
+              }
+            ],
+            "max": 1000,
+            "min": 0,
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green",
+                  "value": null
+                }
+              ]
+            },
+            "unit": "none"
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 5,
+          "w": 3,
+          "x": 0,
+          "y": 5
+        },
+        "id": 4,
+        "interval": null,
+        "links": [],
+        "maxDataPoints": 100,
+        "options": {
+          "orientation": "horizontal",
+          "reduceOptions": {
+            "calcs": [
+              "mean"
+            ],
+            "fields": "",
+            "values": false
+          },
+          "showThresholdLabels": false,
+          "showThresholdMarkers": false,
+          "text": {}
+        },
+        "pluginVersion": "8.1.5",
+        "targets": [
+          {
+            "alias": "Car Count",
+            "groupBy": [],
+            "measurement": "channel0",
+            "orderByTime": "ASC",
+            "policy": "default",
+            "query": "SELECT last(\"car_count\") - first(\"car_count\") FROM \"channel0\" WHERE $timeFilter",
+            "rawQuery": true,
+            "refId": "A",
+            "refresh": "5s",
+            "resultFormat": "time_series",
+            "select": [
+              [
+                {
+                  "params": [
+                    "car_count"
+                  ],
+                  "type": "field"
+                },
+                {
+                  "params": [],
+                  "type": "last"
+                }
+              ]
+            ],
+            "tags": []
+          }
+        ],
+        "timeFrom": null,
+        "timeShift": null,
+        "title": "Vehicles Detected",
+        "type": "gauge"
+      },
+      {
+        "cacheTimeout": null,
+        "datasource": "ITM",
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "thresholds"
+            },
+            "decimals": 0,
+            "mappings": [
+              {
+                "options": {
+                  "match": "null",
+                  "result": {
+                    "text": "0"
+                  }
+                },
+                "type": "special"
+              }
+            ],
+            "max": 50000,
+            "min": 0,
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green",
+                  "value": null
+                }
+              ]
+            },
+            "unit": "none"
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 5,
+          "w": 3,
+          "x": 0,
+          "y": 10
+        },
+        "id": 2,
+        "interval": null,
+        "links": [],
+        "maxDataPoints": 100,
+        "options": {
+          "orientation": "horizontal",
+          "reduceOptions": {
+            "calcs": [
+              "mean"
+            ],
+            "fields": "",
+            "values": false
+          },
+          "showThresholdLabels": false,
+          "showThresholdMarkers": false,
+          "text": {}
+        },
+        "pluginVersion": "8.1.5",
+        "targets": [
+          {
+            "groupBy": [],
+            "measurement": "channel0",
+            "orderByTime": "ASC",
+            "policy": "default",
+            "query": "SELECT last(\"people_count\") - first(\"people_count\") FROM \"channel0\" WHERE $timeFilter",
+            "rawQuery": true,
+            "refId": "A",
+            "refresh": "5s",
+            "resultFormat": "time_series",
+            "select": [
+              [
+                {
+                  "params": [
+                    "people_count"
+                  ],
+                  "type": "field"
+                },
+                {
+                  "params": [],
+                  "type": "last"
+                }
+              ]
+            ],
+            "tags": []
+          }
+        ],
+        "timeFrom": null,
+        "timeShift": null,
+        "title": "Pedestrians Detected",
+        "type": "gauge"
+      },
+      {
+        "aliasColors": {},
+        "bars": false,
+        "dashLength": 10,
+        "dashes": false,
+        "datasource": "ITM",
+        "fieldConfig": {
+          "defaults": {
+            "links": []
+          },
+          "overrides": []
+        },
+        "fill": 1,
+        "fillGradient": 0,
+        "gridPos": {
+          "h": 10,
+          "w": 11,
+          "x": 3,
+          "y": 10
+        },
+        "hiddenSeries": false,
+        "id": 8,
+        "legend": {
+          "avg": false,
+          "current": false,
+          "max": false,
+          "min": false,
+          "show": true,
+          "total": false,
+          "values": false
+        },
+        "lines": true,
+        "linewidth": 1,
+        "nullPointMode": "null",
+        "options": {
+          "alertThreshold": true
+        },
+        "percentage": false,
+        "pluginVersion": "8.1.5",
+        "pointradius": 2,
+        "points": false,
+        "renderer": "flot",
+        "seriesOverrides": [],
+        "spaceLength": 10,
+        "stack": false,
+        "steppedLine": false,
+        "targets": [
+          {
+            "alias": "Vehicles",
+            "groupBy": [],
+            "measurement": "channel0",
+            "orderByTime": "ASC",
+            "policy": "default",
+            "refId": "A",
+            "refresh": "5s",
+            "resultFormat": "time_series",
+            "select": [
+              [
+                {
+                  "params": [
+                    "car_count"
+                  ],
+                  "type": "field"
+                }
+              ]
+            ],
+            "tags": []
+          },
+          {
+            "alias": "Pedestrians",
+            "groupBy": [],
+            "measurement": "channel0",
+            "orderByTime": "ASC",
+            "policy": "default",
+            "refId": "B",
+            "refresh": "5s",
+            "resultFormat": "time_series",
+            "select": [
+              [
+                {
+                  "params": [
+                    "people_count"
+                  ],
+                  "type": "field"
+                }
+              ]
+            ],
+            "tags": []
+          },
+          {
+            "alias": "Bikes",
+            "groupBy": [],
+            "measurement": "channel0",
+            "orderByTime": "ASC",
+            "policy": "default",
+            "refId": "C",
+            "refresh": "5s",
+            "resultFormat": "time_series",
+            "select": [
+              [
+                {
+                  "params": [
+                    "bicycle_count"
+                  ],
+                  "type": "field"
+                }
+              ]
+            ],
+            "tags": []
+          }
+        ],
+        "thresholds": [],
+        "timeFrom": null,
+        "timeRegions": [],
+        "timeShift": null,
+        "title": "Traffic Flow",
+        "tooltip": {
+          "shared": true,
+          "sort": 0,
+          "value_type": "individual"
+        },
+        "type": "graph",
+        "xaxis": {
+          "buckets": null,
+          "mode": "time",
+          "name": null,
+          "show": true,
+          "values": []
+        },
+        "yaxes": [
+          {
+            "format": "short",
+            "label": null,
+            "logBase": 1,
+            "max": null,
+            "min": null,
+            "show": true
+          },
+          {
+            "format": "short",
+            "label": null,
+            "logBase": 1,
+            "max": null,
+            "min": null,
+            "show": true
+          }
+        ],
+        "yaxis": {
+          "align": false,
+          "alignLevel": null
+        }
+      },
+      {
+        "aliasColors": {},
+        "bars": true,
+        "dashLength": 10,
+        "dashes": false,
+        "datasource": "ITM",
+        "fieldConfig": {
+          "defaults": {
+            "links": []
+          },
+          "overrides": []
+        },
+        "fill": 1,
+        "fillGradient": 0,
+        "gridPos": {
+          "h": 10,
+          "w": 5,
+          "x": 14,
+          "y": 10
+        },
+        "hiddenSeries": false,
+        "id": 10,
+        "legend": {
+          "avg": false,
+          "current": false,
+          "max": false,
+          "min": false,
+          "show": true,
+          "total": false,
+          "values": false
+        },
+        "lines": false,
+        "linewidth": 1,
+        "nullPointMode": "null",
+        "options": {
+          "alertThreshold": true
+        },
+        "percentage": false,
+        "pluginVersion": "8.1.5",
+        "pointradius": 2,
+        "points": false,
+        "renderer": "flot",
+        "seriesOverrides": [],
+        "spaceLength": 10,
+        "stack": false,
+        "steppedLine": false,
+        "targets": [
+          {
+            "alias": "Vehicles",
+            "groupBy": [],
+            "measurement": "channel0",
+            "orderByTime": "ASC",
+            "policy": "default",
+            "query": "SELECT last(\"car_count\") - first(\"car_count\") FROM \"channel0\" WHERE $timeFilter",
+            "rawQuery": true,
+            "refId": "A",
+            "refresh": "5s",
+            "resultFormat": "time_series",
+            "select": [
+              [
+                {
+                  "params": [
+                    "car_count"
+                  ],
+                  "type": "field"
+                },
+                {
+                  "params": [],
+                  "type": "last"
+                }
+              ]
+            ],
+            "tags": []
+          },
+          {
+            "alias": "Pedestrians",
+            "groupBy": [],
+            "measurement": "channel0",
+            "orderByTime": "ASC",
+            "policy": "default",
+            "query": "SELECT last(\"people_count\")  -  first(\"people_count\") FROM \"channel0\" WHERE $timeFilter",
+            "rawQuery": true,
+            "refId": "B",
+            "refresh": "5s",
+            "resultFormat": "time_series",
+            "select": [
+              [
+                {
+                  "params": [
+                    "people_count"
+                  ],
+                  "type": "field"
+                },
+                {
+                  "params": [],
+                  "type": "last"
+                }
+              ]
+            ],
+            "tags": []
+          },
+          {
+            "alias": "Bikes",
+            "groupBy": [],
+            "measurement": "channel0",
+            "orderByTime": "ASC",
+            "policy": "default",
+            "query": "SELECT last(\"bicycle_count\") - first(\"bicycle_count\") FROM \"channel0\" WHERE $timeFilter",
+            "rawQuery": true,
+            "refId": "C",
+            "refresh": "5s",
+            "resultFormat": "time_series",
+            "select": [
+              [
+                {
+                  "params": [
+                    "bicycle_count"
+                  ],
+                  "type": "field"
+                },
+                {
+                  "params": [],
+                  "type": "last"
+                }
+              ]
+            ],
+            "tags": []
+          }
+        ],
+        "thresholds": [],
+        "timeFrom": null,
+        "timeRegions": [],
+        "timeShift": null,
+        "title": "Traffic Analysis",
+        "tooltip": {
+          "shared": false,
+          "sort": 0,
+          "value_type": "individual"
+        },
+        "type": "graph",
+        "xaxis": {
+          "buckets": null,
+          "mode": "series",
+          "name": null,
+          "show": true,
+          "values": [
+            "current"
+          ]
+        },
+        "yaxes": [
+          {
+            "format": "short",
+            "label": null,
+            "logBase": 1,
+            "max": null,
+            "min": null,
+            "show": true
+          },
+          {
+            "format": "short",
+            "label": null,
+            "logBase": 1,
+            "max": null,
+            "min": null,
+            "show": false
+          }
+        ],
+        "yaxis": {
+          "align": false,
+          "alignLevel": null
+        }
+      },
+      {
+        "aliasColors": {},
+        "bars": true,
+        "dashLength": 10,
+        "dashes": false,
+        "datasource": "ITM",
+        "fieldConfig": {
+          "defaults": {
+            "links": []
+          },
+          "overrides": []
+        },
+        "fill": 1,
+        "fillGradient": 0,
+        "gridPos": {
+          "h": 10,
+          "w": 5,
+          "x": 19,
+          "y": 10
+        },
+        "hiddenSeries": false,
+        "id": 14,
+        "legend": {
+          "avg": false,
+          "current": false,
+          "max": false,
+          "min": false,
+          "show": true,
+          "total": false,
+          "values": false
+        },
+        "lines": false,
+        "linewidth": 1,
+        "nullPointMode": "null",
+        "options": {
+          "alertThreshold": true
+        },
+        "percentage": false,
+        "pluginVersion": "8.1.5",
+        "pointradius": 2,
+        "points": false,
+        "renderer": "flot",
+        "seriesOverrides": [],
+        "spaceLength": 10,
+        "stack": false,
+        "steppedLine": false,
+        "targets": [
+          {
+            "alias": "Collisions",
+            "groupBy": [],
+            "measurement": "collisions_data",
+            "orderByTime": "ASC",
+            "policy": "default",
+            "query": "SELECT last(\"channel0collision\") - first(\"channel0collision\") FROM \"collisions_data\" WHERE $timeFilter",
+            "rawQuery": true,
+            "refId": "A",
+            "refresh": "5s",
+            "resultFormat": "time_series",
+            "select": [
+              [
+                {
+                  "params": [
+                    "channel0collision"
+                  ],
+                  "type": "field"
+                },
+                {
+                  "params": [],
+                  "type": "last"
+                }
+              ]
+            ],
+            "tags": []
+          },
+          {
+            "alias": "Near Miss",
+            "groupBy": [],
+            "measurement": "collisions_data",
+            "orderByTime": "ASC",
+            "policy": "default",
+            "query": "SELECT last(\"channel0near miss\") - first(\"channel0near miss\") FROM \"collisions_data\" WHERE $timeFilter",
+            "rawQuery": true,
+            "refId": "B",
+            "refresh": "5s",
+            "resultFormat": "time_series",
+            "select": [
+              [
+                {
+                  "params": [
+                    "channel0near miss"
+                  ],
+                  "type": "field"
+                },
+                {
+                  "params": [],
+                  "type": "last"
+                }
+              ]
+            ],
+            "tags": []
+          }
+        ],
+        "thresholds": [],
+        "timeFrom": null,
+        "timeRegions": [],
+        "timeShift": null,
+        "title": "Collision and Near Miss",
+        "tooltip": {
+          "shared": false,
+          "sort": 0,
+          "value_type": "individual"
+        },
+        "type": "graph",
+        "xaxis": {
+          "buckets": null,
+          "mode": "series",
+          "name": null,
+          "show": true,
+          "values": [
+            "current"
+          ]
+        },
+        "yaxes": [
+          {
+            "decimals": 0,
+            "format": "short",
+            "label": null,
+            "logBase": 1,
+            "max": null,
+            "min": null,
+            "show": true
+          },
+          {
+            "decimals": 0,
+            "format": "short",
+            "label": null,
+            "logBase": 1,
+            "max": null,
+            "min": null,
+            "show": true
+          }
+        ],
+        "yaxis": {
+          "align": false,
+          "alignLevel": null
+        }
+      },
+      {
+        "cacheTimeout": null,
+        "datasource": "ITM",
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "thresholds"
+            },
+            "decimals": 0,
+            "mappings": [
+              {
+                "options": {
+                  "match": "null",
+                  "result": {
+                    "text": "0"
+                  }
+                },
+                "type": "special"
+              }
+            ],
+            "max": 100,
+            "min": 0,
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green",
+                  "value": null
+                }
+              ]
+            },
+            "unit": "none"
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 5,
+          "w": 3,
+          "x": 0,
+          "y": 15
+        },
+        "id": 19,
+        "interval": null,
+        "links": [],
+        "maxDataPoints": 100,
+        "options": {
+          "orientation": "horizontal",
+          "reduceOptions": {
+            "calcs": [
+              "mean"
+            ],
+            "fields": "",
+            "values": false
+          },
+          "showThresholdLabels": false,
+          "showThresholdMarkers": false,
+          "text": {}
+        },
+        "pluginVersion": "8.1.5",
+        "targets": [
+          {
+            "groupBy": [],
+            "measurement": "channel0",
+            "orderByTime": "ASC",
+            "policy": "default",
+            "query": "SELECT last(\"bicycle_count\") -  first(\"bicycle_count\") FROM \"channel0\" WHERE $timeFilter",
+            "rawQuery": true,
+            "refId": "A",
+            "refresh": "5s",
+            "resultFormat": "time_series",
+            "select": [
+              [
+                {
+                  "params": [
+                    "bicycle_count"
+                  ],
+                  "type": "field"
+                },
+                {
+                  "params": [],
+                  "type": "last"
+                }
+              ]
+            ],
+            "tags": []
+          }
+        ],
+        "timeFrom": null,
+        "timeShift": null,
+        "title": "Bikes Detected",
+        "type": "gauge"
+      }
+    ],
+    "refresh": "5s",
+    "schemaVersion": 30,
+    "style": "dark",
+    "templating": {
+      "list": []
+    },
+    "time": {
+      "from": "now-1h",
+      "to": "now"
+    },
+    "timepicker": {}
+  }
+}

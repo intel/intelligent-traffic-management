@@ -24,8 +24,8 @@ from collections import deque
 from common.util.logger import get_logger
 from gi.repository import Gst
 from gstgva.util import gst_buffer_data
-from vaserving.vaserving import VAServing
-from vaserving.gstreamer_app_destination import GStreamerAppDestination
+from server.pipeline_server import PipelineServer
+from server.gstreamer_app_destination import GStreamerAppDestination
 
 
 def format_frame(input_queue, output_queue, log, cfg):
@@ -33,7 +33,7 @@ def format_frame(input_queue, output_queue, log, cfg):
         msg = input_queue.get()
         if not msg:
             continue
-        meta_data = {'img_handle': ''.join(random.choices(string.ascii_uppercase + string.digits, k=10))}  #nosec
+        meta_data = {'img_handle': ''.join(random.choices(string.ascii_uppercase + string.digits, k=10))}
 
         if msg.video_frame:
             for message in list(msg.video_frame.messages()):
@@ -42,13 +42,15 @@ def format_frame(input_queue, output_queue, log, cfg):
             with gst_buffer_data(
                     msg.sample.get_buffer(),
                     Gst.MapFlags.READ) as data:
+                if 'resolution' not in meta_data:
+                    log.info("Skip empty frame. Missing resolution")
+                    continue
                 meta_data['frame'] = cv2.imencode(".jpg", np.frombuffer(bytes(data), dtype=np.uint8).reshape((meta_data['resolution']['height'],
                                                                                                               meta_data['resolution']['width'],
                                                                                                               3)),
                                                   [cv2.IMWRITE_JPEG_QUALITY, cfg['encoding_level']])[1].tobytes()
                 meta_data['encoding_type'] = "jpeg"
                 meta_data['encoding_level'] = cfg['encoding_level']
-
             output_queue.append(meta_data)
 
 
@@ -58,19 +60,19 @@ class ITM:
 
         self.log = get_logger(__name__)
 
-        log.info('Getting app config')
+        self.log.info('Getting app config')
         self.src = {"type": os.getenv("SOURCE_TYPE"), "uri": os.getenv("SOURCE_URI")}
         with open("/app/config.json") as fd:
             self.app_cfg = json.load(fd)
         print(f'ITM Serving Config: {self.app_cfg}')
 
-        log.info('Starting Pipeline Server')
-        VAServing.start({
+        self.log.info('Starting Pipeline Server')
+        PipelineServer.start({
             'log_level': os.getenv("PY_LOG_LEVEL", "INFO").upper(),
             'ignore_init_errors': True
         })
 
-        log.info("App_cfg {}".format(self.app_cfg))
+        self.log.info("App_cfg {}".format(self.app_cfg))
         self.output_queue = deque(maxlen=20)
         self.input_queue = queue.Queue(20)
         pub.configure(self.log, self.output_queue)
@@ -83,28 +85,28 @@ class ITM:
             }
 
         self.model_params = {}
-        if 'params' in self.app_cfg:
-            self.model_params.update(self.app_cfg['params'])
+        if 'parameters' in self.app_cfg:
+            self.model_params.update(self.app_cfg['parameters'])
         self.pipeline_name = self.app_cfg['pipeline']
         self.pipeline_version = self.app_cfg['pipeline_version']
-        log.info(f'Creating pipeline {self.pipeline_name}/{self.pipeline_version}')
-        self.pipeline = VAServing.pipeline(self.pipeline_name, self.pipeline_version)
+        self.log.info(f'Creating pipeline {self.pipeline_name}/{self.pipeline_version}')
+        self.pipeline = PipelineServer.pipeline(self.pipeline_name, self.pipeline_version)
         if self.pipeline is None:
             raise RuntimeError('Failed to initialize  pipeline')
 
-        log.info('Starting pipeline {} ---------- {}'.format(self.src, self.dest))
+        self.log.info('Starting pipeline {} ---------- {}'.format(self.src, self.dest))
         self.pipeline.start(source=self.src,
                             destination=self.dest,
                             parameters=self.model_params)
 
     def stop(self):
-        VAServing.stop()
+        PipelineServer.stop()
 
     def run_forever(self):
         self.log.info('Running ...')
         while True:
-            VAServing.wait()
-            pipeline = VAServing.pipeline(self.pipeline_name, self.pipeline_version)
+            PipelineServer.wait()
+            pipeline = PipelineServer.pipeline(self.pipeline_name, self.pipeline_version)
             pipeline.start(source=self.src,
                             destination=self.dest,
                             parameters=self.model_params)

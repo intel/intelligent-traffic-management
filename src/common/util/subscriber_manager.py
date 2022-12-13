@@ -34,7 +34,7 @@ def get_env_values(logger):
     return topic, mqtt_port, mqtt_broker
 
 
-def configure(logger, in_queue, queue_module=None, queue_len=0):
+def configure(logger, in_queue, queue_module=None, queue_len=0, start_threads=True):
     topic, mqtt_port, mqtt_broker = get_env_values(logger)
     if not topic:
         return False
@@ -48,7 +48,8 @@ def configure(logger, in_queue, queue_module=None, queue_len=0):
             args=(input_queue, topic, mqtt_broker, mqtt_port, logger)
         )
         sub_threads.append(t)
-        t.start()
+        if start_threads:
+            t.start()
     return True
 
 

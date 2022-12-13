@@ -24,9 +24,9 @@ data:
         "rules": {
             "collision_event": "event_type == 'collision'",
             "near_miss_event": "event_type == 'near_miss'",
-            "overcrowd_cars": "num_cars == 6",
-            "overcrowd_peds": "num_pedestrians == 7",
-            "overcrowd_bikes": "num_bikes == 5"
+            "overcrowd_cars": "num_cars >= 6",
+            "overcrowd_peds": "num_pedestrians >= 7",
+            "overcrowd_bikes": "num_bikes >= 5"
         }
     }
   schema.json: |

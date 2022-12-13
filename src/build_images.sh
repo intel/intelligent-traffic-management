@@ -15,14 +15,12 @@
 # limitations under the License.
 
 UBUNTU_IMAGE="ubuntu:22.04"
-PIPELINE_SERVER_IMAGE="intel/dlstreamer-pipeline-server:0.7.1"
 CONTROLLER_IP=""
 
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 
 USER="nobody"
-INFERENCE_USER="openvino"
-TAG="5.0"
+TAG="2.0"
 
 while getopts "c:h" option; do
    case $option in
@@ -56,7 +54,7 @@ cp $SCRIPT_DIR/itm-key.pem $SCRIPT_DIR/ITMDashboard/
 cp $SCRIPT_DIR/itm.pem $SCRIPT_DIR/ITMDashboard/
 
 cp -r $SCRIPT_DIR/common/ $SCRIPT_DIR/ITMAnalytics/
-cp -r $SCRIPT_DIR/common/ $SCRIPT_DIR/ITMVideoInference/
+cp -r $SCRIPT_DIR/common/ $SCRIPT_DIR/PipelineServerInit/
 cp -r $SCRIPT_DIR/common/ $SCRIPT_DIR/CloudConnector/
 cp -r $SCRIPT_DIR/common/ $SCRIPT_DIR/RuleEngine/
 
@@ -64,33 +62,33 @@ cd $SCRIPT_DIR/CloudConnector
 docker build \
     --build-arg UBUNTU_IMAGE=$UBUNTU_IMAGE \
     --build-arg USER=$USER \
-    -t $REGISTRY/cloud_connector:$TAG .
-docker push $REGISTRY/cloud_connector:$TAG
+    -t $REGISTRY/intelligent_traffic_management_cloud_connector:$TAG .
+docker push $REGISTRY/intelligent_traffic_management_cloud_connector:$TAG
 
 cd $SCRIPT_DIR/ITMAnalytics
 docker build \
     --build-arg UBUNTU_IMAGE=$UBUNTU_IMAGE \
     --build-arg USER=$USER \
-    -t $REGISTRY/itm_analytics:$TAG .
-docker push $REGISTRY/itm_analytics:$TAG
+    -t $REGISTRY/intelligent_traffic_management_analytics:$TAG .
+docker push $REGISTRY/intelligent_traffic_management_analytics:$TAG
 
 cd $SCRIPT_DIR/ITMDashboard
 docker build \
     --build-arg UBUNTU_IMAGE=$UBUNTU_IMAGE \
     --build-arg USER=$USER \
-    -t $REGISTRY/itm_dashboard:$TAG .
-docker push $REGISTRY/itm_dashboard:$TAG
+    -t $REGISTRY/intelligent_traffic_management_dashboard:$TAG .
+docker push $REGISTRY/intelligent_traffic_management_dashboard:$TAG
 
 cd $SCRIPT_DIR/RuleEngine
 docker build \
     --build-arg UBUNTU_IMAGE=$UBUNTU_IMAGE \
     --build-arg USER=$USER \
-    -t $REGISTRY/rule_engine:$TAG .
-docker push $REGISTRY/rule_engine:$TAG
+    -t $REGISTRY/intelligent_traffic_management_rule_engine:$TAG .
+docker push $REGISTRY/intelligent_traffic_management_rule_engine:$TAG
 
-cd $SCRIPT_DIR/ITMVideoInference
+cd $SCRIPT_DIR/PipelineServerInit
 docker build \
-    --build-arg PIPELINE_SERVER_IMAGE=$PIPELINE_SERVER_IMAGE \
-    --build-arg USER=$INFERENCE_USER \
-    -t $REGISTRY/itm_video_inference:$TAG .
-docker push $REGISTRY/itm_video_inference:$TAG
+    --build-arg UBUNTU_IMAGE=$UBUNTU_IMAGE \
+    --build-arg USER=$USER \
+    -t $REGISTRY/intelligent_traffic_management_pipeline_server_init:$TAG .
+docker push $REGISTRY/intelligent_traffic_management_pipeline_server_init:$TAG

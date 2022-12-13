@@ -15,7 +15,7 @@ import threading
 import os
 
 pub_threads = []
-
+state = {"running": True}
 
 def get_env_values(logger):
     topic = os.getenv("PUBLISHER_TOPIC", None)
@@ -35,6 +35,7 @@ def get_env_values(logger):
 
 def configure(logger, out_queue, queue_module=None, queue_len=0):
     topic, mqtt_port, mqtt_broker = get_env_values(logger)
+    global state
     if not topic:
         return False
     for topic in topic.split():
@@ -44,7 +45,7 @@ def configure(logger, out_queue, queue_module=None, queue_len=0):
             o_queue = out_queue[topic]
         t = threading.Thread(
             target=mqtt.start,
-            args=(o_queue, topic, mqtt_broker, mqtt_port, logger)
+            args=(o_queue, topic, mqtt_broker, mqtt_port, logger, state)
         )
         pub_threads.append(t)
         t.start()

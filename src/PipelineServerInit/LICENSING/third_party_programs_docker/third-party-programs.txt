@@ -1,5 +1,5 @@
 ------------------------------------------------START OF TEMPLATE------------------------------------------------ 
-Intelligent Traffic Management (ITM) Video Inference Third Party Programs File
+Intelligent Traffic Management (ITM) Pipeline Server Init Third Party Programs File
 
 This file contains the list of third party software (“third party programs”) contained in the Intel software and their required notices and/or license terms. This third party software, even if included with the distribution of the Intel software, may be governed by separate license terms, including without limitation, third party license terms, other Intel software license terms, and open source software license terms. These separate license terms govern your use of the third party programs as set forth in the “third-party-programs.txt” or other similarly-named text file.
 
@@ -67,7 +67,7 @@ END OF TERMS AND CONDITIONS
 Instructions for Docker containers or equivalent
 -------------------------------------------------------------
 The Dockerfile depends on the use of the following additional layers.
-1.	dlstreamer-pipeline-server:0.7.1; https://hub.docker.com/layers/dlstreamer-pipeline-server/intel/dlstreamer-pipeline-server/0.7.1/images/sha256-f59ab4c45baa76aed166ee9697b3a5ebfa3f4c33604d62673775dc353fa98043?context=explore
+1.	ubuntu:22.04; https://hub.docker.com/layers/ubuntu/library/ubuntu/22.04/images/sha256-cd3d86f1fb368c6a53659d467560010ab9e0695528127ea336fe32f68f7ba09f?context=explore
 
-Other names and brands may be claimed as the property of others. 
+Other names and brands may be claimed as the property of others.
 ------------------------------------------------END OF TEMPLATE--------------------------------------------------- 

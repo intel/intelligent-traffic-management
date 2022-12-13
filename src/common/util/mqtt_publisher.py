@@ -15,31 +15,47 @@ import socket
 import zlib
 import time
 
-def start(queue, topic, mqtt_broker, mqtt_port, log):
+class MqttPublisher:
+
+    def __init__(self, queue, topic, broker, port, log):
+        self.mqtt_c = mqtt.Client()
+        self.queue = queue
+        self.topic = topic
+        self.broker = broker
+        self.port = port
+        self.log = log
+
+    def connect(self, broker, port):
+        self.mqtt_c.connect(broker, int(port), 600)
+
+    def on_log(self, client, userdata, level, buf):
+        self.log.debug(f"{self.topic} MQTT on_log: {buf}")
+
+    def get_publisher(self):
+        return self.mqtt_c
+
+
+def start(queue, topic, mqtt_broker, mqtt_port, log, state={"running": True}):
     mqtt_c = None
-
-    def on_log(client, userdata, level, buf):
-        log.debug(f"{topic} MQTT on_LOG : {buf}")
-
 
     try:
         log.info(f"{topic} Initializing publisher")
-        mqtt_c = mqtt.Client()
-        mqtt_c.on_log = on_log
-        mqtt_c.connect(mqtt_broker, int(mqtt_port), 600)
-        mqtt_c.socket().setsockopt(socket.SOL_SOCKET, socket.SO_SNDBUF, 2048)
+        mqtt_c = MqttPublisher(queue, topic, mqtt_broker, mqtt_port, log)
+        mqtt_c.get_publisher().on_log = mqtt_c.on_log
+        mqtt_c.connect(mqtt_broker, int(mqtt_port))
+        mqtt_c.get_publisher().socket().setsockopt(socket.SOL_SOCKET, socket.SO_SNDBUF, 2048)
         log.info(f"{topic} Running...")
-        mqtt_c.loop_start()
+        mqtt_c.get_publisher().loop_start()
 
-        while True:
+        while state['running']:
             if queue:
-                mqtt_c.publish(topic, zlib.compress(str(queue.popleft()).encode()), qos=0, retain=False).wait_for_publish()
+                mqtt_c.get_publisher().publish(topic, zlib.compress(str(queue.popleft()).encode()), qos=0, retain=False).wait_for_publish()
             else:
                 time.sleep(0.005)
     except KeyboardInterrupt:
         log.info(f"{topic} Quitting...")
     finally:
         if mqtt_c:
-            mqtt_c.loop_stop()
-            mqtt_c.disconnect()
+            mqtt_c.get_publisher().loop_stop()
+            mqtt_c.get_publisher().disconnect()
         log.info(f"{topic} Finishing...")

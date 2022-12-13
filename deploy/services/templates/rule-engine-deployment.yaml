@@ -35,10 +35,6 @@ spec:
       - name: {{ .Values.rule_engine.name }}
         image: {{ .Values.images.registry }}{{ .Values.images.rule_engine }}:{{ .Values.images.tag }}
         imagePullPolicy: {{ .Values.imagePullPolicy }}
-        resources:
-          limits:
-            memory: "256Mi"
-            cpu: "500m"
         volumeMounts:
         - name: cm-cfg
           mountPath: /app/config.json
@@ -49,8 +45,15 @@ spec:
           subPath: schema.json
           readOnly: true
         env:
+        {{- $minval :=  int 1 -}}
+        {{- $maxval :=  int .Values.num_video_instances | add1 | int -}}
+        {{- $topic := .Values.itm_analytics.topic.publisher -}}
+        {{- $topics := list -}}
+        {{- range untilStep $minval $maxval 1 -}}
+        {{- $topics = printf "%s%d" $topic . | append $topics -}}
+        {{- end }}
         - name: SUBSCRIBER_TOPIC
-          value: {{ .Values.itm_analytics.topic.publisher }}
+          value: {{ $topics | join " " }}
         - name: PUBLISHER_TOPIC
           value: {{ .Values.rule_engine.topic.publisher }}
         - name: MQTT_PORT
@@ -59,6 +62,8 @@ spec:
           value: {{ .Values.mqtt.broker }}
         - name: PY_LOG_LEVEL
           value: "{{ .Values.py_log_level }}"
+        - name: NUM_VIDEO_INSTANCES
+          value: "{{ .Values.num_video_instances }}"
         securityContext:
           readOnlyRootFilesystem: true
       volumes:

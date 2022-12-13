@@ -19,7 +19,7 @@ import time
 from common.util.logger import get_logger
 
 log = get_logger(__name__)
-
+s3_client_created = False
 
 def get_session():
     regex = re.compile('[a-zA-Z0-9]+')
@@ -32,6 +32,7 @@ def get_session():
         aws_secret_access_key=regex.match(secret_key).group(0),
     )
 
+
 def get_bucket():
     regex = re.compile('[a-zA-Z0-9_-]+')
     bucket = f"{os.getenv('AWS_BUCKET')}"
@@ -40,13 +41,21 @@ def get_bucket():
     return regex.match(bucket).group(0)
 
 
-def start(input_queue):
+def get_region():
+    regex = re.compile('[a-zA-Z0-9_-]+')
+    bucket_region = f"{os.getenv('AWS_BUCKET_REGION')}"
+    if not regex.match(bucket_region):
+        raise ValueError("Empty/wrong format bucket")
+    return regex.match(bucket_region).group(0)
+
+
+def start(input_queue, state):
 
     try:
 
         s3 = None
-        s3_client_created = False
-        while not s3_client_created:
+        global s3_client_created
+        while (not s3_client_created and state['running']):
             try:
                 log.info("Creating boto3 session")
                 session = get_session()
@@ -54,23 +63,26 @@ def start(input_queue):
                 s3 = session.resource("s3")
                 bucket = get_bucket()
                 log.info("Creating Bucket " + str(bucket))
-                s3.create_bucket(Bucket=bucket)
+                bucket_region = get_region()
+                if (bucket_region == "us-east-1"):
+                    s3.create_bucket(Bucket=bucket)
+                else:
+                    s3.meta.client.head_bucket(Bucket=bucket)
                 log.info("S3 client created")
                 s3_client_created = True
             except (Exception, botocore.exceptions.ClientError, botocore.exceptions.NoCredentialsError, botocore.exceptions.HTTPClientError) as error:
-                log.info("Wrong credentials: waiting for AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY and ACCESS_TOKEN configuration.")
+                log.info("Wrong credentials: waiting for AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_BUCKET_REGION and ACCESS_TOKEN configuration.")
                 log.error(error)
                 time.sleep(5)
 
-        while True:
+        while state['running']:
             if input_queue:
                 message = input_queue.popleft()
                 log.debug(f"message = {message}")
 
                 try:
-                    s3.Bucket(bucket).put_object(Key=message['title'] + ".jpeg", Body=message['img'])
-                    # log.info("### UPLOAD DISABLED ###")
                     log.info(f'uploaded {message["title"]}')
+                    s3.Bucket(bucket).put_object(Key=message['title'] + ".jpeg", Body=message['img'])
                 except Exception as e:
                     log.error(str(e))
             else:
@@ -80,3 +92,4 @@ def start(input_queue):
         log.info("Quitting...")
     finally:
         log.info("Finishing...")
+

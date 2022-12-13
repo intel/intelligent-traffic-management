@@ -1,4 +1,5 @@
 #!/bin/bash
+set -x
 
 # Copyright 2022 Intel Corporation
 #
@@ -14,12 +15,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-source /opt/intel/openvino/bin/setupvars.sh
-
-# Adding path of libcpu_extension.so to LD_LIBRARY_PATH
-export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$GO_WORK_DIR/common/video/udfs/native/build/ie_cpu_extension
-
-# Adding path of Generic Plugin
-export GST_PLUGIN_PATH=$GST_PLUGIN_PATH:"/usr/local/lib/gstreamer-1.0"
-
-python3 itm.py
+cp test_videos/* /home/pipeline-server/resources/
+cp -r models/* /home/pipeline-server/models/
+cp -pr common /home/pipeline-server/resources/
+cp itm.py /home/pipeline-server/resources/
+cp itm.sh /home/pipeline-server/resources/
+echo "Init complete"

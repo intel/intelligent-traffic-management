@@ -13,25 +13,33 @@ limitations under the License.
 
 import threading
 import uploader
+import signal
 from collections import deque
 from common.util import subscriber_manager
 from common.util.logger import get_logger
 
+state = {"running": True}
+
+
+def sig_handler(_signal, _frame):
+    global state
+    state["running"] = False
+
 
 def main():
+    signal.signal(signal.SIGTERM, sig_handler)
+    signal.signal(signal.SIGINT, sig_handler)
 
     input_queue = deque(maxlen=20)
-    input_threads = []
     subscriber_manager.configure(get_logger(__name__), input_queue)
     uploader_thread = threading.Thread(
-        target=uploader.start, args=(input_queue,)
+        target=uploader.start, args=(input_queue, state,)
     )
 
-    for thread in input_threads:
-        thread.start()
     uploader_thread.start()
     uploader_thread.join()
     subscriber_manager.join()
 
 if __name__ == "__main__":
     main()
+

@@ -25,18 +25,19 @@ mqtt:
 
 images:
   registry: ""
-  tag: "1.0"
-  cloud_connector: "cloud_connector"
-  itm_analytics: "itm_analytics"
-  itm_dashboard: "itm_dashboard"
-  rule_engine: "rule_engine"
-  itm_video_inference: "itm_video_inference"
+  tag: "2.0"
+  cloud_connector: "intelligent_traffic_management_cloud_connector"
+  itm_analytics: "intelligent_traffic_management_analytics"
+  itm_dashboard: "intelligent_traffic_management_dashboard"
+  rule_engine: "intelligent_traffic_management_rule_engine"
+  itm_pipeline_server_init: "intelligent_traffic_management_pipeline_server_init"
 
 cloud_connector:
   name: "cloud-connector"
   aws_key: ""
   aws_secret: ""
   aws_bucket: ""
+  aws_region: ""
 
 itm_analytics:
   name: "itm-analytics"
@@ -48,13 +49,8 @@ itm_analytics:
     port: 8000
     nodePort: 30303
 
-itm_video_inference:
-  name: "itm-video-inference"
-  topic:
-    publisher: "camera"
-  test_videos:
-    - uri: "file:///app/test_videos/video_car_crash.avi"
-    - uri: "file:///app/test_videos/video_pedestrians.avi"
+itm_pipeline_server_init:
+  name: "itm-pipeline-server-init"
 
 itm_dashboard:
   name: "itm-dashboard"
@@ -98,3 +94,28 @@ proxy:
 grafana:
   password: ""
   ip: ""
+
+pipeline_server:
+  name: "dl-streamer-pipeline-server"
+  image:
+    repository: intel/dlstreamer-pipeline-server
+    pullPolicy: IfNotPresent
+    tag: 2022.1.1-ubuntu20
+  topic:
+    publisher: "camera"
+  test_videos:
+    - uri: "file:///home/pipeline-server/resources/video_car_crash.avi"
+    - uri: "file:///home/pipeline-server/resources/video_pedestrians.avi"
+  volumes:
+    models:
+      pvc_name: ps-pvc-models
+      pv_name: ps-pv-models
+      size: 1Gi
+      location: "/home/pipeline-server/models/"
+      hostpath: "/var/lib/smartedge/pipeline-server/models/"
+    res:
+      pvc_name: ps-pvc-res
+      pv_name: ps-pv-res
+      size: 1Gi
+      location: "/home/pipeline-server/resources/"
+      hostpath: "/var/lib/smartedge/pipeline-server/resources/"

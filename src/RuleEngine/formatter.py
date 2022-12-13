@@ -14,12 +14,12 @@ import time
 from common.util.logger import get_logger
 
 
-def start(input_queue, output_queue):
+def start(input_queue, output_queue, state):
     log = get_logger(__name__)
 
     try:
         log.info("Formatter thread started")
-        while True:
+        while state['running']:
             if input_queue:
                 frame = input_queue.popleft()
             else:

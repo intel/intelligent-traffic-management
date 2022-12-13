@@ -34,10 +34,19 @@ GRAFANA_PORT = "3000"
 INFLUXDB_URL = "influxdb.{}.svc.cluster.local:8086".format(NAMESPACE)
 PSQL_USER = os.getenv("PSQL_USER")
 PSQL_PASS = os.getenv("PSQL_PASS")
+TEMPLATE_PATH = "dashboard.html"
 
 MAP_JS_CDN = "https://cdn.jsdelivr.net/gh/openlayers/openlayers.github.io@master/en/v6.4.3/build/ol.js"
 JS_CDN_INTEGRITY = "sha384-RffttofZaGGmE3uVvQmIW/dh1bzuHAJtWkxFyjRkb7eaUWfHo3W3GV8dcET2xTPI"
 MAP_CSS_CDN = "https://cdn.jsdelivr.net/gh/openlayers/openlayers.github.io@master/en/v6.4.3/css/ol.css"
+
+CSP = "frame-ancestors 'none' https://*:32000 ;" \
+    "media-src 'none' https://*:30303 ; " \
+    "object-src 'none' ; " \
+    "connect-src 'none' ; " \
+    "plugin-src 'none' ; " \
+    "frame-src 'none' ; " \
+    "img-src 'self' https://openlayers.org http://a.tile.openstreetmap.org http://b.tile.openstreetmap.org http://c.tile.openstreetmap.org https://*:30303  ;"
 
 NUM_CH = 1
 CONF_DATA, URL_DATA = {}, {}
@@ -68,7 +77,6 @@ class PsqlConn:
             rows = cursor.fetchall()
             cursor.close()
         except (Exception, psycopg2.Error) as error:
-            cursor.execute("rollback")
             log.error(error)
             return -1
         return rows
@@ -131,7 +139,7 @@ class GrafanaConnect:
         r = self._post(self.datasource_url, json_data=json_data)
         if r == -1:
             log.error('Failed to connect to grafana container.')
-            sys.exit(-1)
+            return -1
         res = r.json()
         if 'Data source with the same name already exists' in res['message']:
             pass
@@ -196,6 +204,7 @@ class GrafanaConnect:
                 log.info('Connecting grafana: Grafana container not up yet, retrying...')
                 continue
             else:
+                log.info('Connected to Grafana')
                 break
         self.create_datasource(datasource_template_path)
         with open(consolidated_dashboard_template_path, 'r') as f:
@@ -214,7 +223,7 @@ def dashboard():
     """
     conf = CONF_DATA
     conf['urls'] = URL_DATA
-    response = make_response(render_template('dashboard.html', title='Dashboard',
+    response = make_response(render_template(TEMPLATE_PATH, title='Dashboard',
                              map_js=MAP_JS_CDN, map_cdn_integrity=JS_CDN_INTEGRITY,
                              map_css=MAP_CSS_CDN, config=json.dumps(conf)))
     response.headers.add('Access-Control-Allow-Origin', '*')
@@ -224,17 +233,11 @@ def dashboard():
 
 @app.after_request
 def add_csp(resp):
-    resp.headers['Content-Security-Policy']  =  "frame-ancestors 'none' https://*:32000 ;" \
-                                                "media-src 'none' https://*:30303 ; " \
-                                                "object-src 'none' ; " \
-                                                "connect-src 'none' ; " \
-                                                "plugin-src 'none' ; " \
-                                                "frame-src 'none' ; " \
-                                                "img-src 'self' https://openlayers.org http://a.tile.openstreetmap.org http://b.tile.openstreetmap.org http://c.tile.openstreetmap.org https://*:30303  ; "
+    resp.headers['Content-Security-Policy'] = CSP
     return resp
 
 
-def init_all(over_write=False):
+def init_all():
     """
     Initialize global variables and
     update datasources and dashboards on grafana server
@@ -248,11 +251,15 @@ def init_all(over_write=False):
         entries = psqlDB.retrieve_entries()
         i += 1
         if isinstance(entries, int):
+            log.info('db retrieve failed continue')
             continue
         else:
+            log.info('db retrieve successfully')
             break
 
-    num_ch = len(entries)
+    num_ch = 0
+    if not isinstance(entries, int):
+        num_ch = len(entries)
 
     servers = []
     conf_data = {'cameras': [0] * num_ch}
@@ -294,13 +301,13 @@ def main():
     log.info("GRAFANA_EXTERNAL_URL %s" % GRAFANA_EXTERNAL_URL)
 
     # allow service time to start and add the entries into the database
-    init_all(over_write=True)
+    init_all()
 
     try:
         app.run(host=LOCAL_HOST, port=LOCAL_PORT, threaded=False, ssl_context=('/app/itm.pem', '/app/itm-key.pem'))
     except KeyboardInterrupt:
-        process.terminate()
+        return -1
 
 
-if __name__=='__main__':
+if __name__ == "__main__":
     main()

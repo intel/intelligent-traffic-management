@@ -45,6 +45,8 @@ spec:
             mountPath: /app/schema.json
             subPath: schema.json
             readOnly: true
+          - name: tmp
+            mountPath: /tmp
         env:
         - name: NAMESPACE
           value: {{ .Values.namespace }}
@@ -60,15 +62,22 @@ spec:
           value: "{{ .Values.itm_analytics.service.port }}"
         {{- $minval :=  int 1 -}}
         {{- $maxval :=  int .Values.num_video_instances | add1 | int -}}
-        {{- $topic := .Values.itm_video_inference.topic.publisher -}}
+        {{- $topic := .Values.pipeline_server.topic.publisher -}}
         {{- $topics := list -}}
         {{- range untilStep $minval $maxval 1 -}}
         {{-    $topics = printf "%s%d" $topic . | append $topics -}}
         {{- end }}
         - name: SUBSCRIBER_TOPIC
           value: {{ $topics | join " " }}
+        {{- $minval :=  int 1 -}}
+        {{- $maxval :=  int .Values.num_video_instances | add1 | int -}}
+        {{- $topic := .Values.itm_analytics.topic.publisher -}}
+        {{- $topics := list -}}
+        {{- range untilStep $minval $maxval 1 -}}
+        {{- $topics = printf "%s%d" $topic . | append $topics -}}
+        {{- end }}
         - name: PUBLISHER_TOPIC
-          value: {{ .Values.itm_analytics.topic.publisher }}
+          value: {{ $topics | join " " }}
         - name: MQTT_PORT
           value: "{{ .Values.mqtt.port }}"
         - name: MQTT_BROKER
@@ -89,6 +98,9 @@ spec:
       - name: cm-cfg
         configMap:
           name: itm-analytics-cm
+      - name: tmp
+        hostPath:
+          path: /tmp
       nodeSelector:
         node-role.kubernetes.io/master: ""
       tolerations:

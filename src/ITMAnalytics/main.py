@@ -43,6 +43,13 @@ PSQL_USER = os.getenv("PSQL_USER")
 PSQL_PASS = os.getenv("PSQL_PASS")
 INFLUX_USER = os.getenv("INFLUX_USER")
 INFLUX_PASS = os.getenv("INFLUX_PASS")
+CSP = "frame-ancestors 'none' https://*:32000 https://*:30300;" \
+      "media-src 'none' ; " \
+      "object-src 'none' ; " \
+      "connect-src 'none' ; " \
+      "plugin-src 'none' ; " \
+      "frame-src 'none' ; " \
+      "img-src 'self' https://openlayers.org http://a.tile.openstreetmap.org http://b.tile.openstreetmap.org http://c.tile.openstreetmap.org https://*:30303  ; "
 
 app = Flask(__name__)
 
@@ -50,8 +57,11 @@ log = get_logger(__name__)
 
 stream_list = []
 queue_dict = {}
+publish_queue = {}
 thread_list = []
 queue_cons_list = []
+state = {'running': True}
+
 
 class GlobalData:
     def __init__(self):
@@ -62,12 +72,12 @@ class GlobalData:
         self.current_frames = None
         self.camera_active = None
 
+
 _GData = GlobalData()
 
 
 class PsqlConn:
-    def __init__(self, username_, password_, host_="localhost", port_=32432, database_="itm_metadata"):
-        retries = 5
+    def __init__(self, username_, password_, host_="localhost", port_=32432, database_="itm_metadata", retries=5):
         i = 0
         while i <= retries:
             time.sleep(2)
@@ -132,9 +142,9 @@ def _get_all_streams(num_ch):
     for i in range(num_ch):
         _GData.camera_active[i] = True
     _GData.mutex.release()
-    empty_frame = np.zeros((height,width,3), np.uint8)
+    empty_frame = np.zeros((height, width, 3), np.uint8)
     try:
-        while True:
+        while state['running']:
             rows = []
             for r in range(0, num_rows):
                 cols = []
@@ -152,6 +162,7 @@ def _get_all_streams(num_ch):
             base = cv2.vconcat([cv2.hconcat(h_list) for h_list in rows])
             ret, base_en = cv2.imencode('.jpg', base.copy())
             if not ret:
+                log.debug("skip frame. encoding error")
                 continue
             yield (b' --frame\r\n'
                    b'Content-Type: image/jpeg\r\n\r\n' +
@@ -189,7 +200,7 @@ def _stream_channel(cam_id):
     queue = _GData.q_data[cam_id]
     max_try = 40000
     try:
-        while True:
+        while state['running']:
             if not queue and max_try > 0:
                 max_try -= 1
                 time.sleep(0.001)
@@ -198,16 +209,14 @@ def _stream_channel(cam_id):
                 log.error('Unable to receive frames from pipeline, Unknown error.')
                 break
             max_try = 40000
-            if queue:
-                try:
-                    frame = queue.popleft()
-                except Exception:  #nosec
-                    continue
-            else:
+            try:
+                frame = queue.popleft()
+            except Exception:
                 continue
             _GData.current_frames[cam_id] = frame
             ret, frame = cv2.imencode('.jpg', frame)
             if not ret:
+                log.debug("Failed encoding frame")
                 continue
             yield (b' --frame\r\n'
                    b'Content-Type: image/jpeg\r\n\r\n' +
@@ -242,13 +251,7 @@ def open_stream(cam_id):
 @app.after_request
 def add_headers(response):
     response.headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains'
-    response.headers['Content-Security-Policy']  =  "frame-ancestors 'none' https://*:32000 https://*:30300;" \
-                                                "media-src 'none' ; " \
-                                                "object-src 'none' ; " \
-                                                "connect-src 'none' ; " \
-                                                "plugin-src 'none' ; " \
-                                                "frame-src 'none' ; " \
-                                                "img-src 'self' https://openlayers.org http://a.tile.openstreetmap.org http://b.tile.openstreetmap.org http://c.tile.openstreetmap.org https://*:30303  ; "
+    response.headers['Content-Security-Policy'] = CSP
     return response
 
 
@@ -285,7 +288,6 @@ def main():
     manager = mp.Manager()
     mgr = SharedDequeManager()
     mgr.start()
-    publish_queue = mgr.deque(maxlen=frames_queue_size)
     _GData.camera_active = manager.list([False] * _GData.num_channels)
     _GData.q_data = {key:mgr.deque(maxlen=frames_queue_size) for key in range(0, _GData.num_channels)}
     _GData.current_frames = [None] * _GData.num_channels
@@ -308,7 +310,7 @@ def main():
         client.create_database("itm_metadata")
         log.info("INFLUXDB CONNECTED")
     except influxdb.exceptions.InfluxDBClientError as err:
-        log.error(f'Can\'t connect to InluxDB. \n{err}')
+        log.error(f'Can\'t connect to InfluxDB. \n{err}')
         sys.exit(-1)
     except influxdb.exceptions.InfluxDBServerError as err:
         log.error(f'InfluxDB Server Error.\n{err}')
@@ -320,12 +322,14 @@ def main():
 
     try:
        threading.Thread(target=start_flask).start()
-       subscriber_manager.configure(log, queue_dict, mgr, frames_queue_size)
        publisher_manager.configure(log, publish_queue, mgr, frames_queue_size)
+       subscriber_manager.configure(log, queue_dict, mgr, frames_queue_size, start_threads=False)
        process = mp.Process(target=smartcity.start_app, args=(_GData.conf_data, tracking, collision,
                                                               client, _GData.q_data, _GData.camera_active, queue_dict,
                                                               publish_queue))
        process.start()
+       for t in subscriber_manager.sub_threads:
+           t.start()
        while mp.active_children():
            time.sleep(1)
        process.join()
@@ -333,6 +337,7 @@ def main():
     except KeyboardInterrupt:
        process.join()
        process.terminate()
+
 
 if __name__ == "__main__":
     main()

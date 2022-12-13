@@ -59,7 +59,7 @@ def filter_message(frame, rules):
     return True
 
 
-def start(input_queue, output_queue, json_config):
+def start(input_queue, output_queue, json_config, state):
     log = get_logger(__name__)
     log.info("Starting filter....")
 
@@ -68,18 +68,17 @@ def start(input_queue, output_queue, json_config):
         rules = []
         for cfg_rule in cfg_rules:
             rules.append(rule_engine.Rule(cfg_rules[cfg_rule]))
-        while True:
+        while state['running']:
             if input_queue:
                 frame = input_queue.popleft()
             else:
                 time.sleep(0.005)
                 continue
-            if filter_message(frame, rules):
-                continue
             if filter_by_frequency(frame, json_config):
                 continue
+            if filter_message(frame, rules):
+                continue
             output_queue.append(frame)
-            del frame
     except KeyboardInterrupt:
         log.info("Quitting...")
     finally:

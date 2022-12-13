@@ -16,6 +16,7 @@ import sys
 import threading
 import time
 import yolo_labels
+import math
 from common.util.logger import get_logger
 from frame_utils import Frame
 from tracker import TrackingSystem, InfluxDB
@@ -26,6 +27,9 @@ log = get_logger(__name__)
 tracking_system = []
 TRACKING = True
 COLLISION = True
+
+skipped = []
+state = {'running': True}
 
 
 class FpsManager:
@@ -50,12 +54,10 @@ class FpsManager:
         fps = round(self.frame_counts[ch_id]/(t - self.st_time[ch_id]), 2)
         return fps
 
-import timeit
 
 def frame_callback(frame, conf_data, fps_manager, ch_id, q_data, running, cam_config, publish_queue):
     #log.info(repr(frame['metadata']))
     #log.info(ch_id)
-    t0 = timeit.default_timer()
     fps = fps_manager.update_ch(ch_id)
     scale, thickness, font = 0.6, 2, cv2.FONT_HERSHEY_SIMPLEX
     first_results = []
@@ -71,7 +73,6 @@ def frame_callback(frame, conf_data, fps_manager, ch_id, q_data, running, cam_co
     cv2.rectangle(mat, box_coords[0], box_coords[1], (255, 255, 255), cv2.FILLED)
     cv2.putText(mat, text, (offset_x, offset_y), font, scale, (0, 0, 0), 1)
     objects = {'ped': 0, 'bike': 0, 'car': 0}
-    t1 = timeit.default_timer()
     for roi in frame_obj.roi:
         if frame_obj.confidence_level(roi) < 0.5:
             continue
@@ -87,6 +88,7 @@ def frame_callback(frame, conf_data, fps_manager, ch_id, q_data, running, cam_co
             label = yolo_labels.LABEL_BICYCLE
             objects['bike'] += 1
         else:
+            log.debug(f"Camera {ch_id}: skipping class: {label}")
             continue
 
         if TRACKING:
@@ -100,7 +102,6 @@ def frame_callback(frame, conf_data, fps_manager, ch_id, q_data, running, cam_co
             box_coords = ((rect.x, rect.y), (rect.x + text_width + 2, rect.y - text_height - 2))
             cv2.rectangle(mat, box_coords[0], box_coords[1], (0, 255, 255), cv2.FILLED)
             cv2.putText(mat, text, (rect.x, rect.y), font, scale, (0, 0, 0), 1)
-    t3 = timeit.default_timer()
     event = None
     if TRACKING:
         if not tracking_system[ch_id].is_initialized:
@@ -114,43 +115,26 @@ def frame_callback(frame, conf_data, fps_manager, ch_id, q_data, running, cam_co
             if COLLISION and ('vehicle' in conf_data[ch_id]['analytics'] or 'bike' in conf_data[ch_id]['analytics']):
                 tracking_system[ch_id].detect_collision()
             _, event = tracking_system[ch_id].draw_tracking_results(mat)
-    t4 = timeit.default_timer()
     if not event:
         event = "none"
-    frame = frame_obj.format_pub_frame(event, ch_id, cam_config[ch_id]['address'], objects)
-    t41 = timeit.default_timer()
 
-    log.debug(f"publish frame {frame}")
-    frame['img'] = cv2.imencode('.jpg', mat)[1].tobytes()
-    t42 = timeit.default_timer()
-
-    #publish_queue.put(frame)
-    publish_queue.append(frame)
-    t43 = timeit.default_timer()
+    if fps <= 1 or skipped[ch_id] >= math.ceil((fps - math.ceil(fps/10))/math.ceil(fps/10)):
+        frame = frame_obj.format_pub_frame(event, ch_id, cam_config[ch_id]['address'], objects)
+        log.debug(f"publish frame {frame}")
+        frame['img'] = cv2.imencode('.jpg', mat)[1].tobytes()
+        skipped[ch_id] = 0
+        publish_queue.append(frame)
+    else:
+        skipped[ch_id] += 1
+        log.debug("skip frame")
+        log.debug(f".... {skipped[ch_id]} .... {math.ceil((fps - math.ceil(fps/10))/math.ceil(fps/10))} .... {fps}")
 
     try:
         if running[ch_id]:
-            # if not q_data[ch_id].full():
-            #     q_data[ch_id].put(mat, False)
-            # else:
-            #     _ = q_data[ch_id].get(False)
-            #     q_data[ch_id].put(mat, False)
             q_data[ch_id].append(mat)
     except Exception:
         sys.exit()
-    # t44 = timeit.default_timer()
-    # log.info(f"camera{ch_id} ... {t41 - t4} format frame")
-    # log.info(f"camera{ch_id} ... {t42 - t41} encode frame")
-    # log.info(f"camera{ch_id} ... {t43 - t42} publish 1")
-    # log.info(f"camera{ch_id} ... {t44 - t43} publish2")
-    #
-    #
-    #
-    # t5 = timeit.default_timer()
-    # log.info(f"camera{ch_id} ... {t1 - t0} for frame init + text")
-    # log.info(f"camera{ch_id} ... {t3 - t1} for roi parse")
-    # log.info(f"camera{ch_id} ... {t4 - t3} for obj draw")
-    # log.info(f"camera{ch_id} ... {t5 - t4} for frame publish")
+
 
 
 def start_app(config_data, tracking, collision,
@@ -170,11 +154,11 @@ def start_app(config_data, tracking, collision,
         tracking_system.append(TrackingSystem(i, client, config_data[i]))
     log.info("Tracking system initialized")
     fps_manager = FpsManager(num_ch)
+
     def get_frame(queue, fps_manager, ch_id, q_data, running, config_data, publish_queue):
         try:
-            while True:
+            while state['running']:
                 if queue:
-                    #log.info(f"frame.....camera{ch_id} ..." + str(queue.qsize()))
                     frame_callback(queue.popleft(), config_data, fps_manager, ch_id, q_data, running,  config_data, publish_queue)
                 else:
                     time.sleep(0.005)
@@ -186,10 +170,12 @@ def start_app(config_data, tracking, collision,
             client.stop()
 
     analytics_threads = []
+    global skipped
+    skipped = [0] * num_ch
     for i in range(0, num_ch):
         log.info("Preparing analytics thread for topic: " + list(queue_dict.keys())[i])
         analytics_threads.append(threading.Thread(target=get_frame,
-                                                  args=(queue_dict[list(queue_dict.keys())[i]], fps_manager, i, q_data, running, config_data, publish_queue)))
+                                                  args=(queue_dict[list(queue_dict.keys())[i]], fps_manager, i, q_data, running, config_data, publish_queue[list(publish_queue.keys())[i]])))
         log.info("Starting thread")
         analytics_threads[i].start()
 
